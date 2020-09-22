@@ -4,32 +4,31 @@ import "./styles.css";
 
 export default function App() {
   function testFunc(state) {
-    console.log("in test func", state);
+    // console.log("in test func", state);
     return (state.updated = Date.now());
   }
 
   function hoHoTestFunc(state, meta) {
     const { type, helpers = [], dispatcher } = meta;
-    console.log(meta);
     console.log("ho ho", state, type, helpers, dispatcher);
+    dispatcher({ type: "new", data: "ok" });
     const [setTestState] = helpers;
-    console.log(setTestState);
+    //console.log(setTestState);
     switch (type) {
       case "hey hey":
         if (setTestState) {
           setTestState(true);
-          console.log("setting ho ho testState");
+          // console.log("setting ho ho testState");
         }
         return { heyhey: Date.now() };
       case "ho ho":
-        return { hoho: Date.now() };
+        return { hoho: "hohotestfunction " + Date.now() };
       default:
         return { default: "I got called but I shouldn't have" };
     }
   }
 
   function otherTestFunc(state) {
-    console.log("in other test func", state);
     state.updated = Date.now();
     return state;
   }
@@ -39,7 +38,6 @@ export default function App() {
     (oldState, rest) => {
       const newState = { ...oldState };
       newState[rest.type] = rest.data;
-      console.log("in reducer", newState, rest);
       setTestState(true);
       testFunc(newState);
       return newState;
@@ -47,12 +45,36 @@ export default function App() {
     { attr: "some data" }
   );
 
-  const [state2, dispatch2] = useReducerMap(
+  const [state2, dispatch2, map] = useReducerMap(
     {
-      "hey hey": [otherTestFunc, [hoHoTestFunc, setTestState, testState]],
-      "ho ho": hoHoTestFunc
+      "hey hey": [otherTestFunc, [hoHoTestFunc, { setTestState, testState }]],
+      "ho ho": [hoHoTestFunc, { setTestState, testState }],
+      t: [
+        () => {
+          return { t: "got called" };
+        }
+      ],
+      r: () => {
+        return { r: "got called" };
+      },
+      pre: (state, meta) => {
+        return;
+      },
+      post: (state, meta) => {
+        return { counter: state.counter ? state.counter + 1 : 1 };
+      }
     },
     { attr: "some data" }
+  );
+
+  const [state3, dispatch3] = useReducerMap(
+    {
+      new: (state, meta) => {
+        dispatch2({ type: "new" });
+        return { h: "I got called" };
+      }
+    },
+    { attr: "some different data" }
   );
 
   return (
@@ -60,16 +82,22 @@ export default function App() {
       className="App"
       onClick={(event) => {
         event.preventDefault();
-        dispatch({ type: "hey hey", data: `flubber ${Date.now()}` });
+        console.log("Calling!!");
+        //dispatch({ type: "hey hey", data: `flubber ${Date.now()}` });
         dispatch2({ type: "hey hey", data: `flubber ${Date.now()}` });
         dispatch2({ type: "ho ho", data: `${Date.now()}` });
         dispatch2({ type: "oh no", data: "hmmmm...." });
+        dispatch2({ type: "t" });
+        dispatch2({ type: "r" });
+
+        dispatch3({ type: "new", data: `${Date.now()}` });
       }}
     >
       <h1>Hello CodeSandbox</h1>
       <h2>Start editing to see some magic happen!</h2>
       <pre>{JSON.stringify(state, null, 2)}</pre>
       <pre>{JSON.stringify(state2, null, 2)}</pre>
+      <pre>{JSON.stringify(state3, null, 2)}</pre>
       <div>{testState ? "true" : "false"}</div>
       {typeof testState}
     </div>
