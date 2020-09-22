@@ -9,7 +9,7 @@ function handleAction(actionHandler, state, meta) {
 
 function callHandlerTuple(handler, state, meta) {
   let [h, helpers] = handler;
-  return { ...state, ...handleAction(h, state, { ...meta, ...helpers }) };
+  return { ...state, ...handleAction(h, state, { ...meta, helpers }) };
 }
 
 function callLastHandler(stack, state, meta) {

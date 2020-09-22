@@ -9,8 +9,9 @@ export default function App() {
   }
 
   function hoHoTestFunc(state, meta) {
-    const { type, setTestState = () => {}, dispatcher } = meta;
+    const { type, helpers, dispatcher } = meta;
     dispatcher({ type: "new", data: "ok" });
+    const { setTestState } = helpers;
     console.log(meta);
     switch (type) {
       case "hey hey":
