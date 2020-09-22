@@ -41,13 +41,13 @@ export function useReducerMap(actionMap, initialValue) {
       const handlerStack = [];
       for (let index = 0; index < actionHandler.length; index++) {
         let tempHandler = actionHandler[index];
-        //console.log(type, index, tempHandler);
         if (typeof tempHandler === "function") {
-          newState = { ...callLastHandler(handlerStack, newState, meta) };
+          newState = callLastHandler(handlerStack, newState, meta);
           handlerStack.push(tempHandler);
         } else if (Array.isArray(tempHandler)) {
-          newState = { ...callLastHandler(handlerStack, newState, meta) };
-          newState = { ...callHandlerTuple(tempHandler, newState, meta) };
+          newState = callLastHandler(handlerStack, newState, meta);
+          console.log(tempHandler);
+          newState = callHandlerTuple(tempHandler, newState, meta);
         } else if (typeof tempHandler === "object") {
           const lastFunction = handlerStack.pop();
           newState = callHandlerTuple(
@@ -57,7 +57,7 @@ export function useReducerMap(actionMap, initialValue) {
           );
         }
       }
-      newState = { ...callLastHandler(handlerStack, newState, meta) };
+      newState = callLastHandler(handlerStack, newState, meta);
     } else if (typeof actionHandler === "function") {
       // standalone function call
       newState = {

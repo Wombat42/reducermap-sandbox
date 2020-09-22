@@ -9,14 +9,14 @@ export default function App() {
   }
 
   function hoHoTestFunc(state, meta) {
-    const { type, helpers = [], dispatcher } = meta;
-    console.log("ho ho", state, type, helpers, dispatcher);
+    const { type, setTestState = () => {}, dispatcher } = meta;
     dispatcher({ type: "new", data: "ok" });
-    const [setTestState] = helpers;
-    //console.log(setTestState);
+    console.log(meta);
     switch (type) {
       case "hey hey":
+        console.log("fd");
         if (setTestState) {
+          console.log("setting test state");
           setTestState(true);
           // console.log("setting ho ho testState");
         }
@@ -45,7 +45,7 @@ export default function App() {
     { attr: "some data" }
   );
 
-  const [state2, dispatch2, map] = useReducerMap(
+  const [state2, dispatch2] = useReducerMap(
     {
       "hey hey": [otherTestFunc, [hoHoTestFunc, { setTestState, testState }]],
       "ho ho": [hoHoTestFunc, { setTestState, testState }],
