@@ -8,11 +8,12 @@ function handleAction(actionHandler, state, meta) {
 }
 
 export function useReducerMap(actionMap, initialValue) {
+  const ref = React.useRef();
   function mappingFunction(state, action) {
     let newState = { ...state };
     const { type } = action;
     const actionHandler = actionMap[type];
-    let meta = { type };
+    let meta = { type, dispatcher: ref.current };
     if (Array.isArray(actionHandler)) {
       newState = actionHandler.reduce((tState, handler) => {
         if (Array.isArray(handler)) {
@@ -34,5 +35,6 @@ export function useReducerMap(actionMap, initialValue) {
     return newState;
   }
   const [state, dispatcher] = React.useReducer(mappingFunction, initialValue);
-  return [state, dispatcher, actionMap];
+  ref.current = dispatcher;
+  return [state, dispatcher];
 }
