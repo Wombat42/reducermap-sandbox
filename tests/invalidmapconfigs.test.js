@@ -68,7 +68,7 @@ describe("Invalid map configurations and other errors", () => {
     const { result } = renderHook(() => {
       return useReducerMap(
         {
-          a: [] 
+          a: []
         },
         {}
       );

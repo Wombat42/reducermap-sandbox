@@ -8,32 +8,32 @@ function getHandlerTypeError(actionHandler) {
   return new TypeError(`Handler is an invalid type: ${typeof actionHandler}`);
 }
 
-function handleAction(actionHandler, state, meta) {
+function handleAction(actionHandler, state, data, meta) {
   const type = typeof actionHandler;
   if (type === "function") {
-    return actionHandler(state, meta);
+    return actionHandler(state, data, meta);
   } else if (type !== "undefined") {
     throw getHandlerTypeError(actionHandler);
   }
   throw getNoActionError(meta.type);
 }
 
-function callHandlerTuple(handler, state, meta) {
+function callHandlerTuple(handler, state, data, meta) {
   let [h, helpers] = handler;
   if (typeof h !== "function") {
     throw getHandlerTypeError(h);
   } else if (!helpers || typeof helpers !== "object") {
     throw new TypeError(`Helper object is an invalid type: ${typeof helpers}`);
   }
-  return { ...state, ...handleAction(h, state, { ...meta, helpers }) };
+  return { ...state, ...handleAction(h, state, data, { ...meta, helpers }) };
 }
 
-function callLastHandler(stack, state, meta) {
+function callLastHandler(stack, state, data, meta) {
   if (stack.length > 0) {
     const lastHandler = stack.pop();
     return {
       ...state,
-      ...lastHandler(state, meta)
+      ...lastHandler(state, data, meta)
     };
   }
   return state;
@@ -48,16 +48,17 @@ export function useReducerMap(actionMap, initialValue) {
   const ref = React.useRef();
   function mappingFunction(state, action) {
     let newState = { ...state };
-    const { type } = action;
+    const { type, ...data } = action;
     const actionHandler = actionMap[type];
     const actionHandlerType = typeof actionHandler;
-    let meta = { type, dispatcher: ref.current };
+    let meta = { type };
 
     // pre-handler: Lets you look at the reducer for all events.
     // Executes prior to a named event handler
     if (actionMap.pre) {
-      newState = { ...newState, ...actionMap.pre(newState, meta) };
+      newState = { ...newState, ...actionMap.pre(newState, data, meta) };
     }
+    meta = { ...meta, dispatch: ref.current };
     // You can have more than one handler for an action type;
     if (Array.isArray(actionHandler)) {
       const handlerStack = [];
@@ -68,11 +69,11 @@ export function useReducerMap(actionMap, initialValue) {
         let tempHandler = actionHandler[index];
         let tempHandlerType = typeof tempHandler;
         if (tempHandlerType === "function") {
-          newState = callLastHandler(handlerStack, newState, meta);
+          newState = callLastHandler(handlerStack, newState, data, meta);
           handlerStack.push(tempHandler);
         } else if (Array.isArray(tempHandler)) {
-          newState = callLastHandler(handlerStack, newState, meta);
-          newState = callHandlerTuple(tempHandler, newState, meta);
+          newState = callLastHandler(handlerStack, newState, data, meta);
+          newState = callHandlerTuple(tempHandler, newState, data, meta);
         } else if (tempHandlerType === "object" && tempHandler) {
           const lastFunction = handlerStack.pop();
           if (!lastFunction) {
@@ -81,6 +82,7 @@ export function useReducerMap(actionMap, initialValue) {
           newState = callHandlerTuple(
             [lastFunction, tempHandler],
             newState,
+            data,
             meta
           );
         } else if (tempHandlerType !== "undefined") {
@@ -94,7 +96,7 @@ export function useReducerMap(actionMap, initialValue) {
       // standalone function call
       newState = {
         ...newState,
-        ...actionHandler(newState, meta)
+        ...actionHandler(newState, data, meta)
       };
     } else if (actionHandlerType !== "undefined") {
       throw getHandlerTypeError(actionHandler);
@@ -104,7 +106,8 @@ export function useReducerMap(actionMap, initialValue) {
 
     // post-handler: Executes after all the other handlers
     if (actionMap.post) {
-      newState = { ...newState, ...actionMap.post(newState, meta) };
+      let { dispatch, ...newMeta } = meta;
+      newState = { ...newState, ...actionMap.post(newState, data, newMeta) };
     }
     return newState;
   }
