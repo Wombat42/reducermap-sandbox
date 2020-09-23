@@ -1,14 +1,30 @@
 import React from "react";
 
+function getNoActionError(actionType) {
+  return new Error(`No action handler for type: ${actionType}`);
+}
+
+function getHandlerTypeError(actionHandler) {
+  return new TypeError(`Handler is an invalid type: ${typeof actionHandler}`);
+}
+
 function handleAction(actionHandler, state, meta) {
-  if (actionHandler) {
+  const type = typeof actionHandler;
+  if (type === "function") {
     return actionHandler(state, meta);
+  } else if (type !== "undefined") {
+    throw getHandlerTypeError(actionHandler);
   }
-  throw new TypeError("actionHandler was not set or was invalid");
+  throw getNoActionError(meta.type);
 }
 
 function callHandlerTuple(handler, state, meta) {
   let [h, helpers] = handler;
+  if (typeof h !== "function") {
+    throw getHandlerTypeError(h);
+  } else if (!helpers || typeof helpers !== "object") {
+    throw new TypeError(`Helper object is an invalid type: ${typeof helpers}`);
+  }
   return { ...state, ...handleAction(h, state, { ...meta, helpers }) };
 }
 
@@ -27,12 +43,14 @@ export function useReducerMap(actionMap, initialValue) {
   if (!actionMap) {
     throw new TypeError("ActionMap is not defined");
   }
+  // Should add a validation of the actionMap instead or checking at run time.
 
   const ref = React.useRef();
   function mappingFunction(state, action) {
     let newState = { ...state };
     const { type } = action;
     const actionHandler = actionMap[type];
+    const actionHandlerType = typeof actionHandler;
     let meta = { type, dispatcher: ref.current };
 
     // pre-handler: Lets you look at the reducer for all events.
@@ -43,39 +61,45 @@ export function useReducerMap(actionMap, initialValue) {
     // You can have more than one handler for an action type;
     if (Array.isArray(actionHandler)) {
       const handlerStack = [];
+      if (actionHandler.length === 0) {
+        throw getNoActionError(type);
+      }
       for (let index = 0; index < actionHandler.length; index++) {
         let tempHandler = actionHandler[index];
-        if (typeof tempHandler === "function") {
+        let tempHandlerType = typeof tempHandler;
+        if (tempHandlerType === "function") {
           newState = callLastHandler(handlerStack, newState, meta);
           handlerStack.push(tempHandler);
         } else if (Array.isArray(tempHandler)) {
           newState = callLastHandler(handlerStack, newState, meta);
           newState = callHandlerTuple(tempHandler, newState, meta);
-        } else if (typeof tempHandler === "object") {
+        } else if (tempHandlerType === "object" && tempHandler) {
           const lastFunction = handlerStack.pop();
           if (!lastFunction) {
-            throw new TypeError("Handler cannot be an object");
+            throw getHandlerTypeError(tempHandler);
           }
           newState = callHandlerTuple(
             [lastFunction, tempHandler],
             newState,
             meta
           );
+        } else if (tempHandlerType !== "undefined") {
+          throw getHandlerTypeError(tempHandler);
         } else {
-          throw new TypeError(
-            `Handler is an invalid type: ${typeof tempHandler}`
-          );
+          throw getNoActionError(type);
         }
       }
       newState = callLastHandler(handlerStack, newState, meta);
-    } else if (typeof actionHandler === "function") {
+    } else if (actionHandlerType === "function") {
       // standalone function call
       newState = {
         ...newState,
         ...actionHandler(newState, meta)
       };
-    } else if (typeof actionHandler === "object") {
-      throw new TypeError(`Handler is an invalid type: ${typeof tempHandler}`);
+    } else if (actionHandlerType !== "undefined") {
+      throw getHandlerTypeError(actionHandler);
+    } else {
+      throw getNoActionError(type);
     }
 
     // post-handler: Executes after all the other handlers
