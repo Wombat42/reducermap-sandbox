@@ -24,6 +24,10 @@ function callLastHandler(stack, state, meta) {
 }
 
 export function useReducerMap(actionMap, initialValue) {
+  if (!actionMap) {
+    throw new TypeError("ActionMap is not defined");
+  }
+
   const ref = React.useRef();
   function mappingFunction(state, action) {
     let newState = { ...state };
@@ -46,7 +50,6 @@ export function useReducerMap(actionMap, initialValue) {
           handlerStack.push(tempHandler);
         } else if (Array.isArray(tempHandler)) {
           newState = callLastHandler(handlerStack, newState, meta);
-          console.log(tempHandler);
           newState = callHandlerTuple(tempHandler, newState, meta);
         } else if (typeof tempHandler === "object") {
           const lastFunction = handlerStack.pop();
