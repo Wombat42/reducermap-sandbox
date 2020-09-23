@@ -130,6 +130,7 @@ describe("Valid map configurations", () => {
             return { postCallCounter: state.postCallCounter + 1 || 1 };
           },
           a: (state, data, meta) => {
+            // You can dispatch from here, but now you can cause a infinite loop
             expect(meta.dispatch).toBeInstanceOf(Function);
             return { a: "called" };
           },
