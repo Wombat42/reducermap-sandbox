@@ -118,13 +118,13 @@ describe("Valid map configurations", () => {
       return useReducerMap(
         {
           pre: (state, data, meta) => {
-            // dispatch fucntion must not be in a pre or it will cause an infinite loop
+            // dispatch function must not be in a pre or it will cause an infinite loop
             expect(data).toBeDefined();
             expect(meta.dispatch).toBeUndefined();
             return { preCallCounter: state.preCallCounter + 1 || 1 };
           },
           post: (state, data, meta) => {
-            // dispatch fucntion must not be in a post or it will cause an infinite loop
+            // dispatch function must not be in a post or it will cause an infinite loop
             expect(data).toBeDefined();
             expect(meta.dispatch).toBeUndefined();
             return { postCallCounter: state.postCallCounter + 1 || 1 };
