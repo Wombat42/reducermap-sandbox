@@ -2,6 +2,16 @@ import { renderHook, act } from "@testing-library/react-hooks";
 import { useReducerMap } from "../src/reducermap";
 
 describe("Invalid map configurations and other errors", () => {
+  function runCommon(result, errMsg, type) {
+    const [, dispatch] = result.current;
+    act(() => {
+      dispatch({ type: "a" });
+    });
+
+    let errorMessage = errMsg + type;
+    expect(result.error.message).toMatch(errorMessage);
+  }
+
   it.each`
     actionType             | type
     ${[null]}              | ${"object"}
@@ -31,13 +41,7 @@ describe("Invalid map configurations and other errors", () => {
         {}
       );
     });
-    const [, dispatch] = result.current;
-    act(() => {
-      dispatch({ type: "a" });
-    });
-
-    let errorMessage = "Handler is an invalid type: " + type;
-    expect(result.error.message).toMatch(errorMessage);
+    runCommon(result, "Handler is an invalid type: ", type);
   });
 
   it.each`
@@ -47,7 +51,7 @@ describe("Invalid map configurations and other errors", () => {
     ${[[() => {}, 9]]}     | ${"number"}
     ${[[() => {}, true]]}  | ${"boolean"}
     ${[[() => {}, false]]} | ${"boolean"}
-  `("Fault due to invalid helpers", ({ actionType, type }) => {
+  `("Fault due to invalid helper type", ({ actionType, type }) => {
     const { result } = renderHook(() => {
       return useReducerMap(
         {
@@ -56,12 +60,7 @@ describe("Invalid map configurations and other errors", () => {
         {}
       );
     });
-    const [, dispatch] = result.current;
-    act(() => {
-      dispatch({ type: "a" });
-    });
-    let errorMessage = "Helper object is an invalid type: " + type;
-    expect(result.error.message).toMatch(errorMessage);
+    runCommon(result, "Helper object is an invalid type: ", type);
   });
 
   it("Fault due to empty handler array", () => {
@@ -69,7 +68,7 @@ describe("Invalid map configurations and other errors", () => {
     const { result } = renderHook(() => {
       return useReducerMap(
         {
-          a: []
+          a: [] 
         },
         {}
       );
@@ -86,7 +85,7 @@ describe("Invalid map configurations and other errors", () => {
     const { result } = renderHook(() => {
       return useReducerMap(
         {
-          a: {}
+          a: () => {}
         },
         {}
       );
