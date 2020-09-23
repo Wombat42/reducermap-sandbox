@@ -53,10 +53,17 @@ export function useReducerMap(actionMap, initialValue) {
           newState = callHandlerTuple(tempHandler, newState, meta);
         } else if (typeof tempHandler === "object") {
           const lastFunction = handlerStack.pop();
+          if (!lastFunction) {
+            throw new TypeError("Handler cannot be an object");
+          }
           newState = callHandlerTuple(
             [lastFunction, tempHandler],
             newState,
             meta
+          );
+        } else {
+          throw new TypeError(
+            `Handler is an invalid type: ${typeof tempHandler}`
           );
         }
       }
@@ -67,6 +74,8 @@ export function useReducerMap(actionMap, initialValue) {
         ...newState,
         ...actionHandler(newState, meta)
       };
+    } else if (typeof actionHandler === "object") {
+      throw new TypeError(`Handler is an invalid type: ${typeof tempHandler}`);
     }
 
     // post-handler: Executes after all the other handlers
